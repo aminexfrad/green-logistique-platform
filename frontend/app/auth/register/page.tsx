@@ -122,6 +122,9 @@ export default function RegisterPage() {
                 </div>
               </div>
 
+              <p className="text-sm text-muted-foreground">
+                Admin accounts must be created by the platform administrator in the Django admin dashboard.
+              </p>
               {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
 
               <Button onClick={handleNextStep} disabled={!role || isLoading} className="w-full bg-primary hover:bg-primary/90">
