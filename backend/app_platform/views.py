@@ -46,6 +46,9 @@ class RegisterView(APIView):
         sector = request.data.get('sector', '').strip()
         role = request.data.get('role', 'client')
 
+        if role == 'admin':
+            return Response({'message': 'Admin accounts must be created in the Django admin dashboard.'}, status=status.HTTP_403_FORBIDDEN)
+
         if not email or not password or not first_name or not last_name or not company_name:
             return Response({'message': 'All required fields must be provided.'}, status=status.HTTP_400_BAD_REQUEST)
 

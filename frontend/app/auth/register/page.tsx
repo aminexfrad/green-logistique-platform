@@ -66,13 +66,16 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/30 flex items-center justify-center p-4 py-12">
-      <div className="absolute inset-0 -z-10 overflow-hidden">
-        <div className="absolute -top-1/2 -right-1/2 w-full h-full bg-gradient-radial from-primary/20 to-transparent rounded-full blur-3xl" />
-        <div className="absolute -bottom-1/2 -left-1/2 w-full h-full bg-gradient-radial from-secondary/20 to-transparent rounded-full blur-3xl" />
-      </div>
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden bg-slate-950">
+      <div
+        className="absolute inset-0 bg-cover bg-center opacity-90"
+        style={{ backgroundImage: "url('/sphere-with-trees-trucks.jpg')" }}
+      />
+      <div className="absolute inset-0 bg-black/50" />
+      <div className="absolute left-[-10%] top-24 h-72 w-72 rounded-full bg-primary/20 blur-3xl animate-pulse" />
+      <div className="absolute right-[-10%] bottom-20 h-72 w-72 rounded-full bg-secondary/20 blur-3xl animate-pulse delay-2000" />
 
-      <Card className="w-full max-w-2xl border-border/50 shadow-2xl">
+      <Card className="relative z-10 w-full max-w-2xl border-border/50 shadow-2xl">
         <CardHeader className="space-y-2 text-center">
           <div className="flex justify-center mb-4">
             <div className="w-12 h-12 bg-primary rounded-lg flex items-center justify-center">
@@ -92,7 +95,7 @@ export default function RegisterPage() {
                   {[
                     { id: 'shipper', label: 'Expéditeur', desc: 'Manage shipments' },
                     { id: 'carrier', label: 'Transporteur', desc: 'Manage fleet' },
-                    { id: 'admin', label: 'Administrator', desc: 'Manage platform' },
+                    { id: 'client', label: 'Client', desc: 'Track your orders' },
                   ].map((r) => (
                     <div
                       key={r.id}

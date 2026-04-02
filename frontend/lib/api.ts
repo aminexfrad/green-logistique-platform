@@ -1,5 +1,5 @@
 import { AuthUser } from '@/lib/store'
-import { Carrier, Shipment, User as ApiUser, CarbonProject, AuditLog } from '@/lib/mock-data'
+import { Carrier, Shipment, User as ApiUser, CarbonProject } from '@/lib/mock-data'
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'
 
@@ -30,16 +30,24 @@ function getAuthToken() {
   return window.localStorage.getItem('authToken')
 }
 
-function getAuthHeaders() {
+function getAuthHeaders(): HeadersInit {
   const token = getAuthToken()
   return token ? { Authorization: `Token ${token}` } : {}
 }
 
 async function request<T>(path: string, options: RequestInit = {}) {
-  const headers = {
-    'Content-Type': 'application/json',
-    ...getAuthHeaders(),
-    ...options.headers,
+  const headers = new Headers(options.headers)
+  headers.set('Content-Type', 'application/json')
+
+  const authHeaders = getAuthHeaders()
+  if (authHeaders instanceof Headers) {
+    authHeaders.forEach((value, key) => headers.set(key, value))
+  } else {
+    Object.entries(authHeaders).forEach(([key, value]) => {
+      if (typeof value === 'string') {
+        headers.set(key, value)
+      }
+    })
   }
 
   const response = await fetch(`${API_URL}${path}`, {
@@ -61,6 +69,10 @@ async function request<T>(path: string, options: RequestInit = {}) {
 export type LoginResult = {
   token: string
   user: AuthUser
+}
+
+export type AuditLog = {
+  [key: string]: unknown
 }
 
 export async function loginUser(email: string, password: string): Promise<LoginResult> {

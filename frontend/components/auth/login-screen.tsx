@@ -10,7 +10,6 @@ import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Eye, EyeOff, Mail, Lock, Chrome, LogOut } from 'lucide-react'
 import { useAppStore } from '@/lib/store'
-import { getDashboardRoute } from '@/lib/auth'
 import { loginUser } from '@/lib/api'
 
 export function LoginScreen() {
@@ -22,6 +21,12 @@ export function LoginScreen() {
   const [errorMessage, setErrorMessage] = useState('')
   const setAuthState = useAppStore((state) => state.setAuthState)
   const router = useRouter()
+
+  const getDashboardRoute = (role: string) => {
+    if (role === 'admin') return '/admin'
+    if (role === 'manager') return '/manager'
+    return '/dashboard'
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
