@@ -38,7 +38,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className="font-sans antialiased bg-background text-foreground dark">
+      <body suppressHydrationWarning className="font-sans antialiased bg-background text-foreground dark">
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"

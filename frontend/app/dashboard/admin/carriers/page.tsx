@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
-import { carriers } from '@/lib/mock-data'
+import { mockCarriers as carriers } from '@/lib/mock-data'
 import { Search, Plus, CheckCircle, AlertCircle, FileText, Star } from 'lucide-react'
 import {
   Table,
@@ -47,7 +47,7 @@ export default function AdminCarriersPage() {
             { label: 'Total Carriers', value: carriers.length, icon: '🚚' },
             { label: 'Verified', value: carriers.filter(c => c.isVerified).length, icon: '✓' },
             { label: 'Pending Validation', value: carriers.filter(c => !c.isVerified).length, icon: '⏳' },
-            { label: 'Gold Certified', value: carriers.filter(c => c.certification === 'gold').length, icon: '⭐' },
+            { label: 'Gold Certified', value: carriers.filter(c => c.greenCertification === 'gold').length, icon: '⭐' },
           ].map((stat, i) => (
             <Card key={i} className="bg-card/50 border-border/50">
               <CardContent className="pt-6">
@@ -146,13 +146,13 @@ export default function AdminCarriersPage() {
                     <TableRow key={carrier.id} className="border-border/50 hover:bg-muted/30">
                       <TableCell className="font-medium">{carrier.name}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">{carrier.zone}</TableCell>
-                      <TableCell className="text-sm">{carrier.vehicles}</TableCell>
+                      <TableCell className="text-sm">{carrier.vehicles.length} vehicles</TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
-                          className={certificationLevels[carrier.certification as keyof typeof certificationLevels]}
+                          className={certificationLevels[carrier.greenCertification as keyof typeof certificationLevels]}
                         >
-                          {carrier.certification.charAt(0).toUpperCase() + carrier.certification.slice(1)}
+                          {carrier.greenCertification.charAt(0).toUpperCase() + carrier.greenCertification.slice(1)}
                         </Badge>
                       </TableCell>
                       <TableCell>

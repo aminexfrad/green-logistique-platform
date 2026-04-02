@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { carriers } from '@/lib/mock-data'
+import { mockCarriers as carriers } from '@/lib/mock-data'
 import { Search, MapPin, Truck, Star, Phone, Mail, Award, MessageSquare } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 
@@ -28,7 +28,7 @@ export default function ShipperCarriersPage() {
 
   const filteredCarriers = carriers.filter((carrier) => {
     const matchesSearch = carrier.name.toLowerCase().includes(searchQuery.toLowerCase())
-    const matchesCert = filterCertification === 'all' || carrier.certification === filterCertification
+    const matchesCert = filterCertification === 'all' || carrier.greenCertification === filterCertification
     const matchesZone = filterZone === 'all' || carrier.zone === filterZone
     return matchesSearch && matchesCert && matchesZone
   })
@@ -97,9 +97,9 @@ export default function ShipperCarriersPage() {
                           <h3 className="font-semibold text-base">{carrier.name}</h3>
                           <Badge
                             variant="outline"
-                            className={certificationColors[carrier.certification]}
+                            className={certificationColors[carrier.greenCertification]}
                           >
-                            {carrier.certification.charAt(0).toUpperCase() + carrier.certification.slice(1)}
+                            {carrier.greenCertification.charAt(0).toUpperCase() + carrier.greenCertification.slice(1)}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-1">
@@ -119,7 +119,7 @@ export default function ShipperCarriersPage() {
                         </div>
                         <div className="flex items-center gap-2 text-muted-foreground">
                           <Truck className="w-4 h-4" />
-                          {carrier.vehicles} vehicles
+                          {carrier.vehicles.length} vehicles
                         </div>
                         <div className="w-full bg-muted/50 rounded-full h-2 mt-3">
                           <div
@@ -138,12 +138,12 @@ export default function ShipperCarriersPage() {
                     <div className="space-y-6">
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div className="text-center">
-                          <p className="text-2xl font-bold text-primary">{carrier.vehicles}</p>
+                          <p className="text-2xl font-bold text-primary">{carrier.vehicles.length}</p>
                           <p className="text-xs text-muted-foreground">Vehicles</p>
                         </div>
                         <div className="text-center">
-                          <Badge variant="outline" className={certificationColors[carrier.certification]}>
-                            {carrier.certification.charAt(0).toUpperCase() + carrier.certification.slice(1)}
+                          <Badge variant="outline" className={certificationColors[carrier.greenCertification]}>
+                            {carrier.greenCertification.charAt(0).toUpperCase() + carrier.greenCertification.slice(1)}
                           </Badge>
                           <p className="text-xs text-muted-foreground mt-2">Certification</p>
                         </div>
@@ -177,15 +177,15 @@ export default function ShipperCarriersPage() {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Electric Vehicles:</span>
-                              <span className="font-medium">{Math.ceil(carrier.vehicles * 0.6)} ({Math.ceil(carrier.vehicles * 0.6 / carrier.vehicles * 100)}%)</span>
+                              <span className="font-medium">{Math.ceil(carrier.vehicles.length * 0.6)} ({Math.ceil(carrier.vehicles.length * 0.6 / carrier.vehicles.length * 100)}%)</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">GNV Vehicles:</span>
-                              <span className="font-medium">{Math.floor(carrier.vehicles * 0.25)} ({Math.floor(carrier.vehicles * 0.25 / carrier.vehicles * 100)}%)</span>
+                              <span className="font-medium">{Math.floor(carrier.vehicles.length * 0.25)} ({Math.floor(carrier.vehicles.length * 0.25 / carrier.vehicles.length * 100)}%)</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Euro 6 Diesel:</span>
-                              <span className="font-medium">{Math.floor(carrier.vehicles * 0.15)} ({Math.floor(carrier.vehicles * 0.15 / carrier.vehicles * 100)}%)</span>
+                              <span className="font-medium">{Math.floor(carrier.vehicles.length * 0.15)} ({Math.floor(carrier.vehicles.length * 0.15 / carrier.vehicles.length * 100)}%)</span>
                             </div>
                           </div>
                         </div>

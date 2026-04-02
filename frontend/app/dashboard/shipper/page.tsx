@@ -177,6 +177,7 @@ export default function ShipperDashboard() {
                 <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
                 <XAxis stroke="var(--muted-foreground)" />
                 <YAxis stroke="var(--muted-foreground)" />
+                <YAxis yAxisId="right" orientation="right" stroke="var(--muted-foreground)" />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'var(--card)',
