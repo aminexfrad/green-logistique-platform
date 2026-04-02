@@ -1,24 +1,34 @@
-'use client'
+﻿'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { mockCarriers as carriers } from '@/lib/mock-data'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { fetchCarriers } from '@/lib/api'
 import { Search, MapPin, Truck, Star, Phone, Mail, Award, MessageSquare } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import type { Carrier } from '@/lib/mock-data'
 
 export default function ShipperCarriersPage() {
   const [searchQuery, setSearchQuery] = useState('')
   const [filterCertification, setFilterCertification] = useState<string>('all')
   const [filterZone, setFilterZone] = useState<string>('all')
-  const [selectedCarrier, setSelectedCarrier] = useState<typeof carriers[0] | null>(null)
+  const [selectedCarrier, setSelectedCarrier] = useState<Carrier | null>(null)
+  const [carriers, setCarriers] = useState<Carrier[]>([])
+  const [loading, setLoading] = useState(true)
 
   const zones = ['all', 'France', 'Europe', 'International']
   const certifications = ['all', 'bronze', 'silver', 'gold']
+
+  useEffect(() => {
+    fetchCarriers()
+      .then((data) => setCarriers(data))
+      .catch(() => setCarriers([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const certificationColors: Record<string, string> = {
     bronze: 'bg-amber-900/30 text-amber-400 border-amber-700/50',
@@ -29,7 +39,10 @@ export default function ShipperCarriersPage() {
   const filteredCarriers = carriers.filter((carrier) => {
     const matchesSearch = carrier.name.toLowerCase().includes(searchQuery.toLowerCase())
     const matchesCert = filterCertification === 'all' || carrier.greenCertification === filterCertification
-    const matchesZone = filterZone === 'all' || carrier.zone === filterZone
+    const matchesZone =
+      filterZone === 'all' ||
+      carrier.zone.toLowerCase().includes(filterZone.toLowerCase())
+
     return matchesSearch && matchesCert && matchesZone
   })
 
@@ -167,7 +180,7 @@ export default function ShipperCarriersPage() {
                             </div>
                             <div className="flex items-center gap-2 text-muted-foreground">
                               <Mail className="w-4 h-4" />
-                              contact@{carrier.name.toLowerCase().replace(' ', '')}.com
+                              contact@{carrier.name.toLowerCase().replace(/\s+/g, '')}.com
                             </div>
                           </div>
                         </div>
@@ -177,15 +190,15 @@ export default function ShipperCarriersPage() {
                           <div className="space-y-2 text-sm">
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Electric Vehicles:</span>
-                              <span className="font-medium">{Math.ceil(carrier.vehicles.length * 0.6)} ({Math.ceil(carrier.vehicles.length * 0.6 / carrier.vehicles.length * 100)}%)</span>
+                              <span className="font-medium">{Math.ceil(carrier.vehicles.length * 0.6)} ({Math.ceil((Math.ceil(carrier.vehicles.length * 0.6) / (carrier.vehicles.length || 1)) * 100)}%)</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">GNV Vehicles:</span>
-                              <span className="font-medium">{Math.floor(carrier.vehicles.length * 0.25)} ({Math.floor(carrier.vehicles.length * 0.25 / carrier.vehicles.length * 100)}%)</span>
+                              <span className="font-medium">{Math.floor(carrier.vehicles.length * 0.25)} ({Math.floor((Math.floor(carrier.vehicles.length * 0.25) / (carrier.vehicles.length || 1)) * 100)}%)</span>
                             </div>
                             <div className="flex justify-between">
                               <span className="text-muted-foreground">Euro 6 Diesel:</span>
-                              <span className="font-medium">{Math.floor(carrier.vehicles.length * 0.15)} ({Math.floor(carrier.vehicles.length * 0.15 / carrier.vehicles.length * 100)}%)</span>
+                              <span className="font-medium">{Math.floor(carrier.vehicles.length * 0.15)} ({Math.floor((Math.floor(carrier.vehicles.length * 0.15) / (carrier.vehicles.length || 1)) * 100)}%)</span>
                             </div>
                           </div>
                         </div>
@@ -207,7 +220,13 @@ export default function ShipperCarriersPage() {
               ))}
             </div>
 
-            {filteredCarriers.length === 0 && (
+            {loading && (
+              <div className="text-center py-12 text-muted-foreground">
+                Loading carriers...
+              </div>
+            )}
+
+            {!loading && filteredCarriers.length === 0 && (
               <div className="text-center py-12">
                 <Search className="w-12 h-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="text-muted-foreground">No carriers found matching your criteria</p>

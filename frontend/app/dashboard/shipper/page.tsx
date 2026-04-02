@@ -1,12 +1,14 @@
-'use client'
+﻿'use client'
 
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { KPICard } from '@/components/shared/kpi-card'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 import { getTranslation } from '@/lib/translations'
-import { mockShipments } from '@/lib/mock-data'
+import { fetchShipments } from '@/lib/api'
+import { formatNumber } from '@/lib/utils'
 import {
   BarChart3,
   PackageOpen,
@@ -17,14 +19,8 @@ import {
   AlertCircle,
 } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts'
-import { useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import type { Shipment } from '@/lib/mock-data'
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
 import { ShipmentForm } from '@/components/shared/shipment-form'
 
 const monthlyData = [
@@ -48,7 +44,20 @@ const COLORS = ['#ff7c7c', '#ff9f4a', '#ffcc4d', '#4dc8ff']
 export default function ShipperDashboard() {
   const { language } = useAppStore()
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [shipments, setShipments] = useState<Shipment[]>([])
+  const [loading, setLoading] = useState(true)
   const t = (key: string) => getTranslation(language, key)
+
+  useEffect(() => {
+    fetchShipments()
+      .then((data) => setShipments(data))
+      .catch(() => setShipments([]))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const totalCO2 = shipments.reduce((sum, shipment) => sum + (shipment.co2Kg || 0), 0)
+  const greenShipmentsCount = shipments.filter((shipment) => shipment.transportMode === 'maritime' || shipment.transportMode === 'rail').length
+  const greenShipmentsPercent = shipments.length ? Math.round((greenShipmentsCount / shipments.length) * 100) : 0
 
   const shipmentColumns = [
     {
@@ -88,7 +97,7 @@ export default function ShipperDashboard() {
       key: 'co2Kg',
       label: 'CO2 (kg)',
       render: (value: number) => (
-        <span className="font-semibold text-primary">{value.toFixed(1)}</span>
+        <span className="font-semibold text-primary">{formatNumber(value, 1)}</span>
       ),
       sortable: true,
     },
@@ -134,7 +143,7 @@ export default function ShipperDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
             title={t('totalShipments')}
-            value="142"
+            value={shipments.length}
             icon={PackageOpen}
             unit="shipments"
             trend={{ value: 12, direction: 'up' }}
@@ -142,7 +151,7 @@ export default function ShipperDashboard() {
           />
           <KPICard
             title={t('totalCO2')}
-            value="3,240"
+            value={totalCO2.toFixed(0)}
             icon={Leaf}
             unit="kg"
             trend={{ value: 8, direction: 'up' }}
@@ -150,7 +159,7 @@ export default function ShipperDashboard() {
           />
           <KPICard
             title={t('compensatedCO2')}
-            value="1,200"
+            value={Math.round(totalCO2 * 0.2)}
             icon={TrendingDown}
             unit="kg"
             trend={{ value: 15, direction: 'up' }}
@@ -260,35 +269,20 @@ export default function ShipperDashboard() {
                 View Details
               </Button>
             </div>
-            <div className="flex items-center justify-between p-4 rounded-lg bg-blue-500/10 border border-blue-500/20">
-              <div>
-                <p className="font-medium text-foreground">
-                  Carrier Recommendation
-                </p>
-                <p className="text-sm text-muted-foreground">
-                  EcoTrans Express has a new green-certified route available
-                </p>
-              </div>
-              <Button variant="outline" size="sm">
-                Explore
-              </Button>
-            </div>
           </div>
         </div>
 
-        {/* Recent Shipments */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-bold text-foreground">
-            Recent Shipments
-          </h3>
+        {/* Shipments Table */}
+        <div className="rounded-xl border border-border bg-card p-6">
           <DataTable
             columns={shipmentColumns}
-            data={mockShipments}
+            data={shipments}
             searchPlaceholder="Search shipments..."
             actions={(row) => (
-              <button className="p-2 hover:bg-sidebar-accent/10 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
+              <Button variant="outline" size="sm" className="gap-2">
                 <Eye className="w-4 h-4" />
-              </button>
+                View
+              </Button>
             )}
           />
         </div>

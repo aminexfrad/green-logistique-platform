@@ -1,11 +1,13 @@
-'use client'
+﻿'use client'
 
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 import { getTranslation } from '@/lib/translations'
-import { mockShipments } from '@/lib/mock-data'
+import { fetchShipments } from '@/lib/api'
+import { formatNumber } from '@/lib/utils'
 import { Eye, Download, MapPin, Calendar } from 'lucide-react'
 import {
   Dialog,
@@ -14,12 +16,22 @@ import {
   DialogTitle,
   DialogTrigger,
 } from '@/components/ui/dialog'
-import { useState } from 'react'
+import { useState as useLocalState } from 'react'
+import type { Shipment } from '@/lib/mock-data'
 
 export default function ShipmentsList() {
   const { language } = useAppStore()
   const t = (key: string) => getTranslation(language, key)
-  const [selectedShipment, setSelectedShipment] = useState<typeof mockShipments[0] | null>(null)
+  const [shipments, setShipments] = useState<Shipment[]>([])
+  const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchShipments()
+      .then((data) => setShipments(data))
+      .catch(() => setShipments([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const columns = [
     {
@@ -60,7 +72,7 @@ export default function ShipmentsList() {
       key: 'co2Kg',
       label: 'CO2',
       render: (value: number) => (
-        <span className="font-semibold text-primary">{value.toFixed(1)} kg</span>
+        <span className="font-semibold text-primary">{formatNumber(value, 1)} kg</span>
       ),
       sortable: true,
     },
@@ -87,10 +99,10 @@ export default function ShipmentsList() {
         {/* Filters & Stats */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total', value: mockShipments.length, color: 'primary' },
-            { label: 'In Transit', value: mockShipments.filter(s => s.status === 'inTransit').length, color: 'yellow-500' },
-            { label: 'Delivered', value: mockShipments.filter(s => s.status === 'delivered').length, color: 'green-500' },
-            { label: 'Issues', value: mockShipments.filter(s => s.status === 'incident').length, color: 'red-500' },
+            { label: 'Total', value: shipments.length, color: 'primary' },
+            { label: 'In Transit', value: shipments.filter(s => s.status === 'inTransit').length, color: 'yellow-500' },
+            { label: 'Delivered', value: shipments.filter(s => s.status === 'delivered').length, color: 'green-500' },
+            { label: 'Issues', value: shipments.filter(s => s.status === 'incident').length, color: 'red-500' },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -108,7 +120,7 @@ export default function ShipmentsList() {
         <div className="rounded-lg border border-border bg-card p-6">
           <DataTable
             columns={columns}
-            data={mockShipments}
+            data={shipments}
             searchPlaceholder="Search shipments..."
             actions={(row) => (
               <Dialog>
@@ -156,7 +168,7 @@ export default function ShipmentsList() {
                             CO2 Impact
                           </p>
                           <p className="font-semibold text-primary">
-                            {selectedShipment.co2Kg.toFixed(1)} kg
+                            {formatNumber(selectedShipment.co2Kg ?? selectedShipment.co2_kg, 1)} kg
                           </p>
                         </div>
                       </div>

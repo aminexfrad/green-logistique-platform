@@ -1,12 +1,13 @@
-'use client'
+﻿'use client'
 
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { KPICard } from '@/components/shared/kpi-card'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 import { getTranslation } from '@/lib/translations'
-import { mockShipments, mockCarriers } from '@/lib/mock-data'
+import { fetchShipments, fetchCarriers } from '@/lib/api'
 import {
   Activity,
   CheckCircle,
@@ -17,11 +18,38 @@ import {
   X,
 } from 'lucide-react'
 import { LinearProgress } from '@/components/ui/progress'
+import type { Carrier, Shipment } from '@/lib/mock-data'
 
 export default function CarrierDashboard() {
   const { language } = useAppStore()
   const t = (key: string) => getTranslation(language, key)
-  const carrier = mockCarriers[0]
+  const [carrier, setCarrier] = useState<Carrier | null>(null)
+  const [shipments, setShipments] = useState<Shipment[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    Promise.all([fetchCarriers(), fetchShipments()])
+      .then(([carrierData, shipmentData]) => {
+        setCarrier(carrierData[0] || null)
+        setShipments(shipmentData)
+      })
+      .catch(() => {
+        setCarrier(null)
+        setShipments([])
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const activeShipments = shipments.filter((s) => s.status !== 'cancelled')
+  const completedDeliveries = shipments.filter((s) => s.status === 'delivered').length
+  const totalCO2 = shipments.reduce((sum, shipment) => sum + (shipment.co2Kg || 0), 0)
+  const greenTruckShare = shipments.length
+    ? Math.round(
+        (shipments.filter((shipment) => shipment.transportMode === 'rail' || shipment.transportMode === 'maritime').length /
+          shipments.length) *
+          100
+      )
+    : 0
 
   const missionColumns = [
     {
@@ -62,7 +90,6 @@ export default function CarrierDashboard() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Carrier Dashboard
@@ -72,11 +99,10 @@ export default function CarrierDashboard() {
           </p>
         </div>
 
-        {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
             title="Active Missions"
-            value="8"
+            value={activeShipments.length}
             icon={Activity}
             unit="missions"
             trend={{ value: 3, direction: 'up' }}
@@ -84,7 +110,7 @@ export default function CarrierDashboard() {
           />
           <KPICard
             title="Completed Deliveries"
-            value="156"
+            value={completedDeliveries}
             icon={CheckCircle}
             unit="deliveries"
             trend={{ value: 12, direction: 'up' }}
@@ -92,10 +118,10 @@ export default function CarrierDashboard() {
           />
           <KPICard
             title="Green Score"
-            value="92/100"
+            value={carrier ? `${carrier.greenScore}/100` : '—'}
             icon={Leaf}
             color="accent"
-            description="Gold Certified"
+            description={carrier ? `${carrier.greenCertification} Certified` : 'Loading...'}
           />
           <KPICard
             title="Average Rating"
@@ -107,49 +133,49 @@ export default function CarrierDashboard() {
           />
         </div>
 
-        {/* Fleet Summary */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {carrier.vehicles.map((vehicle) => (
-            <div
-              key={vehicle.id}
-              className="rounded-xl border border-border bg-card p-6 hover:border-primary/50 transition-colors"
-            >
-              <div className="flex items-start justify-between mb-4">
-                <div>
-                  <h3 className="font-bold text-foreground">
-                    {vehicle.type === 'dieselTruck'
-                      ? 'Diesel Truck'
-                      : vehicle.type === 'electricTruck'
+        {carrier && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {carrier.vehicles.map((vehicle) => (
+              <div
+                key={vehicle.id}
+                className="rounded-xl border border-border bg-card p-6 hover:border-primary/50 transition-colors"
+              >
+                <div className="flex items-start justify-between mb-4">
+                  <div>
+                    <h3 className="font-bold text-foreground">
+                      {vehicle.type === 'dieselTruck'
+                        ? 'Diesel Truck'
+                        : vehicle.type === 'electricTruck'
                         ? 'Electric Truck'
                         : vehicle.type === 'hybridTruck'
-                          ? 'Hybrid Truck'
-                          : 'Van'}
-                  </h3>
-                  <p className="text-sm text-muted-foreground">{vehicle.plate}</p>
+                        ? 'Hybrid Truck'
+                        : 'Van'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground">{vehicle.plate}</p>
+                  </div>
+                  {vehicle.fuelType === 'electric' && (
+                    <span className="px-2 py-1 bg-green-500/20 text-green-500 text-xs rounded-full font-medium">
+                      Green
+                    </span>
+                  )}
                 </div>
-                {vehicle.fuelType === 'electric' && (
-                  <span className="px-2 py-1 bg-green-500/20 text-green-500 text-xs rounded-full font-medium">
-                    Green
-                  </span>
-                )}
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">Capacity:</span>
+                    <span className="font-semibold">{vehicle.capacityKg} kg</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-muted-foreground">CO2 Factor:</span>
+                    <span className="font-semibold text-primary">
+                      {vehicle.co2Factor} g/t.km
+                    </span>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Capacity:</span>
-                  <span className="font-semibold">{vehicle.capacityKg} kg</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">CO2 Factor:</span>
-                  <span className="font-semibold text-primary">
-                    {vehicle.co2Factor} g/t.km
-                  </span>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
 
-        {/* Performance Metrics */}
         <div className="rounded-xl border border-border bg-card p-6">
           <h3 className="text-lg font-bold text-foreground mb-6">
             Performance Metrics
@@ -174,12 +200,12 @@ export default function CarrierDashboard() {
                 <span className="text-sm font-medium text-foreground">
                   Green Shipments (%)
                 </span>
-                <span className="text-sm font-bold text-green-500">78%</span>
+                <span className="text-sm font-bold text-green-500">{greenTruckShare}%</span>
               </div>
               <div className="h-2 bg-sidebar-accent/20 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-green-500 rounded-full"
-                  style={{ width: '78%' }}
+                  style={{ width: `${greenTruckShare}%` }}
                 />
               </div>
             </div>
@@ -200,14 +226,13 @@ export default function CarrierDashboard() {
           </div>
         </div>
 
-        {/* Active Missions */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-foreground">
             Current Missions
           </h3>
           <DataTable
             columns={missionColumns}
-            data={mockShipments.filter((s) => s.status !== 'cancelled')}
+            data={activeShipments}
             searchPlaceholder="Search missions..."
             actions={(row) => (
               <div className="flex items-center gap-1">

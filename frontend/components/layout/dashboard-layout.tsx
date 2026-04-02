@@ -3,13 +3,18 @@
 import { Sidebar } from './sidebar'
 import { Topbar } from './topbar'
 import { useAppStore } from '@/lib/store'
+import { useEffect } from 'react'
 
 interface DashboardLayoutProps {
   children: React.ReactNode
 }
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
-  const { sidebarOpen, language } = useAppStore()
+  const { sidebarOpen, language, hydrateAuth } = useAppStore()
+
+  useEffect(() => {
+    hydrateAuth()
+  }, [hydrateAuth])
 
   return (
     <div dir={language === 'ar' ? 'rtl' : 'ltr'} className="flex h-screen bg-background">

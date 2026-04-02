@@ -2,32 +2,67 @@
 
 import { useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FieldGroup, Field, FieldLabel } from '@/components/ui/field'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Mail, Lock, Building2, Hash, Briefcase, Check } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
+import { registerUser } from '@/lib/api'
 
 export default function RegisterPage() {
   const [step, setStep] = useState(1)
-  const [role, setRole] = useState('')
+  const [role, setRole] = useState('shipper')
   const [isLoading, setIsLoading] = useState(false)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [email, setEmail] = useState('')
+  const [companyName, setCompanyName] = useState('')
+  const [siret, setSiret] = useState('')
+  const [sector, setSector] = useState('retail')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const router = useRouter()
 
   const handleNextStep = () => {
-    setIsLoading(true)
-    setTimeout(() => {
-      setStep(2)
-      setIsLoading(false)
-    }, 500)
+    if (!role) {
+      setErrorMessage('Please select a role to continue.')
+      return
+    }
+    setErrorMessage('')
+    setStep(2)
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (password !== confirmPassword) {
+      setErrorMessage('Passwords do not match.')
+      return
+    }
+
     setIsLoading(true)
-    setTimeout(() => setIsLoading(false), 1500)
+    setErrorMessage('')
+
+    try {
+      await registerUser({
+        role,
+        firstName,
+        lastName,
+        email,
+        companyName,
+        siret,
+        sector,
+        password,
+      })
+      router.push('/auth/login')
+    } catch (error) {
+      setErrorMessage(error instanceof Error ? error.message : 'Registration failed')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -73,15 +108,21 @@ export default function RegisterPage() {
                           <h3 className="font-semibold">{r.label}</h3>
                           <p className="text-sm text-muted-foreground">{r.desc}</p>
                         </div>
-                        {role === r.id && <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center"><Check className="w-3 h-3 text-primary-foreground" /></div>}
+                        {role === r.id && (
+                          <div className="w-5 h-5 bg-primary rounded-full flex items-center justify-center">
+                            <Check className="w-3 h-3 text-primary-foreground" />
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}
                 </div>
               </div>
 
+              {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
+
               <Button onClick={handleNextStep} disabled={!role || isLoading} className="w-full bg-primary hover:bg-primary/90">
-                {isLoading ? 'Loading...' : 'Continue'}
+                Continue
               </Button>
             </div>
           ) : (
@@ -90,14 +131,14 @@ export default function RegisterPage() {
                 <FieldGroup>
                   <Field>
                     <FieldLabel>First Name</FieldLabel>
-                    <Input placeholder="John" required className="bg-muted/50" />
+                    <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} placeholder="John" required className="bg-muted/50" />
                   </Field>
                 </FieldGroup>
 
                 <FieldGroup>
                   <Field>
                     <FieldLabel>Last Name</FieldLabel>
-                    <Input placeholder="Doe" required className="bg-muted/50" />
+                    <Input value={lastName} onChange={(e) => setLastName(e.target.value)} placeholder="Doe" required className="bg-muted/50" />
                   </Field>
                 </FieldGroup>
               </div>
@@ -107,7 +148,14 @@ export default function RegisterPage() {
                   <FieldLabel>Email Address</FieldLabel>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input type="email" placeholder="you@company.com" className="pl-10 bg-muted/50" required />
+                    <Input
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@company.com"
+                      className="pl-10 bg-muted/50"
+                      required
+                    />
                   </div>
                 </Field>
               </FieldGroup>
@@ -117,7 +165,7 @@ export default function RegisterPage() {
                   <FieldLabel>Company Name</FieldLabel>
                   <div className="relative">
                     <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input placeholder="Your Company" className="pl-10 bg-muted/50" required />
+                    <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Your Company" className="pl-10 bg-muted/50" required />
                   </div>
                 </Field>
               </FieldGroup>
@@ -127,7 +175,7 @@ export default function RegisterPage() {
                   <FieldLabel>SIRET Number</FieldLabel>
                   <div className="relative">
                     <Hash className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input placeholder="14 digits" className="pl-10 bg-muted/50" />
+                    <Input value={siret} onChange={(e) => setSiret(e.target.value)} placeholder="14 digits" className="pl-10 bg-muted/50" />
                   </div>
                 </Field>
               </FieldGroup>
@@ -135,7 +183,7 @@ export default function RegisterPage() {
               <FieldGroup>
                 <Field>
                   <FieldLabel>Sector</FieldLabel>
-                  <Select>
+                  <Select value={sector} onValueChange={(value) => setSector(value)}>
                     <SelectTrigger className="bg-muted/50">
                       <SelectValue placeholder="Select a sector" />
                     </SelectTrigger>
@@ -155,7 +203,14 @@ export default function RegisterPage() {
                   <FieldLabel>Password</FieldLabel>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input type="password" placeholder="••••••••" className="pl-10 bg-muted/50" required />
+                    <Input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pl-10 bg-muted/50"
+                      required
+                    />
                   </div>
                 </Field>
               </FieldGroup>
@@ -165,7 +220,14 @@ export default function RegisterPage() {
                   <FieldLabel>Confirm Password</FieldLabel>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-                    <Input type="password" placeholder="••••••••" className="pl-10 bg-muted/50" required />
+                    <Input
+                      type="password"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      placeholder="••••••••"
+                      className="pl-10 bg-muted/50"
+                      required
+                    />
                   </div>
                 </Field>
               </FieldGroup>
@@ -174,6 +236,8 @@ export default function RegisterPage() {
                 <Checkbox required className="mt-1" />
                 <span className="text-sm text-muted-foreground">I agree to the terms of service and privacy policy</span>
               </label>
+
+              {errorMessage ? <p className="text-sm text-destructive">{errorMessage}</p> : null}
 
               <div className="flex gap-3">
                 <Button variant="outline" onClick={() => setStep(1)} className="flex-1 border-border/50">

@@ -2,7 +2,7 @@ export interface User {
   id: string
   name: string
   email: string
-  role: 'admin' | 'expéditeur' | 'transporteur' | 'client'
+  role: 'admin' | 'shipper' | 'carrier' | 'client'
   company: string
   avatar?: string
   status: 'active' | 'inactive'
@@ -95,7 +95,7 @@ export const mockUsers: User[] = [
     id: '2',
     name: 'Marie Bernard',
     email: 'marie@example.com',
-    role: 'expéditeur',
+    role: 'shipper',
     company: 'FreshFood Inc',
     status: 'active',
   },
@@ -103,7 +103,7 @@ export const mockUsers: User[] = [
     id: '3',
     name: 'Pierre Martin',
     email: 'pierre@example.com',
-    role: 'transporteur',
+    role: 'carrier',
     company: 'EcoTrans Ltd',
     status: 'active',
   },
@@ -382,12 +382,3 @@ export const mockCompanies: Company[] = [
 ]
 
 // Mock user by role
-export function getMockUserByRole(role: string): User {
-  const userMap: { [key: string]: User } = {
-    admin: mockUsers[0],
-    expéditeur: mockUsers[1],
-    transporteur: mockUsers[2],
-    client: mockUsers[3],
-  }
-  return userMap[role] || mockUsers[0]
-}

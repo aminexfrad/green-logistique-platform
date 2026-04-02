@@ -13,18 +13,18 @@ import {
   Users,
   BadgeCheck,
   ShoppingCart,
-  BarChart2,
-  ChevronDown,
-  ChevronUp,
+  User,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export function Sidebar() {
-  const { currentRole, language, sidebarOpen } = useAppStore()
+  const { authUser, language, sidebarOpen } = useAppStore()
   const t = (key: string) => getTranslation(language, key)
-  const [expandedMenu, setExpandedMenu] = useState<string | null>(null)
+
+  if (!authUser || !sidebarOpen) {
+    return null
+  }
 
   const navigationByRole = {
     admin: [
@@ -33,12 +33,6 @@ export function Sidebar() {
         href: '/dashboard/admin',
         icon: BarChart3,
         id: 'dashboard',
-      },
-      {
-        label: t('shipments'),
-        href: '/dashboard/admin/shipments',
-        icon: PackageOpen,
-        id: 'shipments',
       },
       {
         label: 'User Management',
@@ -53,19 +47,13 @@ export function Sidebar() {
         id: 'carriers',
       },
       {
-        label: t('carbonMarketplace'),
-        href: '/dashboard/admin/carbon',
-        icon: Leaf,
-        id: 'carbon',
-      },
-      {
         label: 'Audit Logs',
-        href: '/dashboard/admin/logs',
+        href: '/dashboard/admin/audit-logs',
         icon: FileText,
         id: 'logs',
       },
     ],
-    expéditeur: [
+    shipper: [
       {
         label: t('dashboard'),
         href: '/dashboard/shipper',
@@ -97,7 +85,7 @@ export function Sidebar() {
         id: 'reports',
       },
     ],
-    transporteur: [
+    carrier: [
       {
         label: t('dashboard'),
         href: '/dashboard/carrier',
@@ -117,16 +105,10 @@ export function Sidebar() {
         id: 'fleet',
       },
       {
-        label: 'Green Score',
-        href: '/dashboard/carrier/score',
-        icon: Leaf,
-        id: 'score',
-      },
-      {
-        label: 'Reviews',
-        href: '/dashboard/carrier/reviews',
-        icon: BarChart2,
-        id: 'reviews',
+        label: 'My Profile',
+        href: '/dashboard/carrier/profile',
+        icon: User,
+        id: 'profile',
       },
     ],
     client: [
@@ -142,14 +124,23 @@ export function Sidebar() {
         icon: ShoppingCart,
         id: 'orders',
       },
+      {
+        label: 'Impact',
+        href: '/dashboard/client/impact',
+        icon: Leaf,
+        id: 'impact',
+      },
+      {
+        label: 'Feedback',
+        href: '/dashboard/client/feedback',
+        icon: FileText,
+        id: 'feedback',
+      },
     ],
   }
 
+  const currentRole = authUser.role
   const navItems = navigationByRole[currentRole as keyof typeof navigationByRole] || []
-
-  if (!sidebarOpen) {
-    return null
-  }
 
   return (
     <div
@@ -193,7 +184,7 @@ export function Sidebar() {
 
       <div className="absolute bottom-0 w-full border-t border-border bg-card p-4">
         <Link
-          href="/settings"
+          href="/dashboard/settings"
           className={cn(
             'flex items-center gap-3 px-4 py-2 rounded-lg transition-colors',
             'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10 text-sm',
@@ -204,6 +195,13 @@ export function Sidebar() {
           <span>{t('settings')}</span>
         </Link>
         <button
+          onClick={() => {
+            const { logout } = useAppStore.getState()
+            logout()
+            if (typeof window !== 'undefined') {
+              window.location.href = '/'
+            }
+          }}
           className={cn(
             'w-full flex items-center gap-3 px-4 py-2 rounded-lg transition-colors',
             'text-muted-foreground hover:text-foreground hover:bg-sidebar-accent/10 text-sm',

@@ -15,6 +15,7 @@ import { Card } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { motion } from 'framer-motion'
 import { Truck, MapPin, Package, Calendar, AlertCircle } from 'lucide-react'
+import { formatNumber } from '@/lib/utils'
 
 interface ShipmentFormProps {
   onSubmit?: (data: any) => void
@@ -294,7 +295,7 @@ export function ShipmentForm({ onSubmit }: ShipmentFormProps) {
               <div className="bg-card rounded-lg p-4 border border-border">
                 <p className="text-sm text-muted-foreground mb-1">Estimated CO2</p>
                 <p className="text-3xl font-bold text-primary">
-                  {estimatedCO2.toFixed(1)} kg
+                  {formatNumber(estimatedCO2, 1)} kg
                 </p>
               </div>
               <div className="bg-card rounded-lg p-4 border border-border">

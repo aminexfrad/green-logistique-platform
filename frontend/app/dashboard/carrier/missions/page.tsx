@@ -1,21 +1,32 @@
-'use client'
+﻿'use client'
 
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 import { getTranslation } from '@/lib/translations'
-import { mockShipments } from '@/lib/mock-data'
+import { fetchShipments } from '@/lib/api'
+import { formatNumber } from '@/lib/utils'
 import { Check, X, Eye, MapPin, Package, Calendar, DollarSign } from 'lucide-react'
 import { Card } from '@/components/ui/card'
 import { motion } from 'framer-motion'
-import { useState } from 'react'
 import { toast } from 'sonner'
+import type { Shipment } from '@/lib/mock-data'
 
 export default function Missions() {
   const { language } = useAppStore()
   const t = (key: string) => getTranslation(language, key)
+  const [shipments, setShipments] = useState<Shipment[]>([])
   const [acceptedMissions, setAcceptedMissions] = useState<string[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchShipments()
+      .then((data) => setShipments(data))
+      .catch(() => setShipments([]))
+      .finally(() => setLoading(false))
+  }, [])
 
   const handleAccept = (shipmentId: string) => {
     setAcceptedMissions((prev) => [...prev, shipmentId])
@@ -26,8 +37,8 @@ export default function Missions() {
     toast.info('Mission declined')
   }
 
-  const activeMissions = mockShipments.filter((s) => !acceptedMissions.includes(s.id))
-  const acceptedShipments = mockShipments.filter((s) => acceptedMissions.includes(s.id))
+  const activeMissions = shipments.filter((s) => !acceptedMissions.includes(s.id))
+  const acceptedShipments = shipments.filter((s) => acceptedMissions.includes(s.id))
 
   const missionColumns = [
     {
@@ -54,7 +65,7 @@ export default function Missions() {
       key: 'co2Kg',
       label: 'CO2 Impact',
       render: (value: number) => (
-        <span className="text-primary font-semibold">{value.toFixed(1)} kg</span>
+        <span className="text-primary font-semibold">{formatNumber(value, 1)} kg</span>
       ),
     },
   ]
@@ -62,7 +73,6 @@ export default function Missions() {
   return (
     <DashboardLayout>
       <div className="space-y-8">
-        {/* Header */}
         <div>
           <h1 className="text-3xl font-bold text-foreground mb-2">
             Incoming Missions
@@ -72,7 +82,6 @@ export default function Missions() {
           </p>
         </div>
 
-        {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {[
             {
@@ -87,7 +96,7 @@ export default function Missions() {
             },
             {
               label: 'Total CO2',
-              value: `${acceptedShipments.reduce((sum, s) => sum + s.co2Kg, 0).toFixed(0)} kg`,
+              value: `${acceptedShipments.reduce((sum, s) => sum + (s.co2Kg || 0), 0).toFixed(0)} kg`,
               color: 'primary',
             },
           ].map((stat) => (
@@ -106,12 +115,15 @@ export default function Missions() {
           ))}
         </div>
 
-        {/* Pending Missions */}
         <div className="space-y-4">
           <h3 className="text-lg font-bold text-foreground">
             Pending Requests ({activeMissions.length})
           </h3>
-          {activeMissions.length > 0 ? (
+          {loading ? (
+            <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+              Loading missions...
+            </div>
+          ) : activeMissions.length > 0 ? (
             <div className="space-y-3">
               {activeMissions.map((mission) => (
                 <motion.div
@@ -124,52 +136,35 @@ export default function Missions() {
                     <div className="flex-1">
                       <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-4">
                         <div>
-                          <p className="text-xs text-muted-foreground mb-1">
-                            Shipment
-                          </p>
-                          <p className="font-mono font-bold text-foreground">
-                            {mission.id}
-                          </p>
+                          <p className="text-xs text-muted-foreground mb-1">Shipment</p>
+                          <p className="font-mono font-bold text-foreground">{mission.id}</p>
                         </div>
                         <div className="flex items-center gap-2">
                           <MapPin className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <p className="text-xs text-muted-foreground">
-                              Route
-                            </p>
+                            <p className="text-xs text-muted-foreground">Route</p>
                             <p className="text-sm font-medium text-foreground">
-                              {mission.origin.split(',')[0]} →{' '}
-                              {mission.destination.split(',')[0]}
+                              {mission.origin.split(',')[0]} → {mission.destination.split(',')[0]}
                             </p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Package className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <p className="text-xs text-muted-foreground">
-                              Cargo
-                            </p>
-                            <p className="text-sm font-medium text-foreground">
-                              {mission.weight} kg
-                            </p>
+                            <p className="text-xs text-muted-foreground">Cargo</p>
+                            <p className="text-sm font-medium text-foreground">{mission.weight} kg</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-muted-foreground" />
                           <div>
-                            <p className="text-xs text-muted-foreground">
-                              Delivery
-                            </p>
-                            <p className="text-sm font-medium text-foreground">
-                              {mission.deliveryDate}
-                            </p>
+                            <p className="text-xs text-muted-foreground">Delivery</p>
+                            <p className="text-sm font-medium text-foreground">{mission.deliveryDate}</p>
                           </div>
                         </div>
                         <div className="bg-primary/10 rounded-lg p-2">
                           <p className="text-xs text-muted-foreground">CO2</p>
-                          <p className="font-bold text-primary">
-                            {mission.co2Kg.toFixed(1)} kg
-                          </p>
+                          <p className="font-bold text-primary">{formatNumber(mission.co2Kg ?? mission.co2_kg, 1)} kg</p>
                         </div>
                       </div>
                     </div>
@@ -178,19 +173,14 @@ export default function Missions() {
                       <button
                         onClick={() => handleAccept(mission.id)}
                         className="p-2 rounded-lg bg-green-500/20 text-green-500 hover:bg-green-500/30 transition-colors"
-                        title="Accept"
                       >
-                        <Check className="w-5 h-5" />
+                        <Check className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleReject(mission.id)}
                         className="p-2 rounded-lg bg-red-500/20 text-red-500 hover:bg-red-500/30 transition-colors"
-                        title="Reject"
                       >
-                        <X className="w-5 h-5" />
-                      </button>
-                      <button className="p-2 rounded-lg bg-sidebar-accent/20 text-muted-foreground hover:text-foreground transition-colors">
-                        <Eye className="w-5 h-5" />
+                        <X className="w-4 h-4" />
                       </button>
                     </div>
                   </div>
@@ -198,34 +188,11 @@ export default function Missions() {
               ))}
             </div>
           ) : (
-            <Card className="p-8 text-center bg-sidebar-accent/5">
-              <p className="text-muted-foreground">
-                No pending requests at this time
-              </p>
-            </Card>
+            <div className="rounded-lg border border-border bg-card p-8 text-center text-muted-foreground">
+              No missions available.
+            </div>
           )}
         </div>
-
-        {/* Accepted Missions */}
-        {acceptedShipments.length > 0 && (
-          <div className="space-y-4">
-            <h3 className="text-lg font-bold text-foreground">
-              Accepted Missions ({acceptedShipments.length})
-            </h3>
-            <div className="rounded-lg border border-border bg-card overflow-hidden">
-              <DataTable
-                columns={missionColumns}
-                data={acceptedShipments}
-                searchable={false}
-                actions={(row) => (
-                  <button className="p-2 hover:bg-sidebar-accent/10 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
-                    <Eye className="w-4 h-4" />
-                  </button>
-                )}
-              />
-            </div>
-          </div>
-        )}
       </div>
     </DashboardLayout>
   )

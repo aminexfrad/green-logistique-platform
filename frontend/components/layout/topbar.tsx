@@ -10,6 +10,7 @@ import {
   LogOut,
 } from 'lucide-react'
 import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
 import {
   DropdownMenu,
@@ -19,19 +20,66 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { getMockUserByRole } from '@/lib/mock-data'
 
 export function Topbar() {
   const {
-    currentRole,
-    setCurrentRole,
+    authUser,
     language,
     setLanguage,
     setSidebarOpen,
+    logout,
   } = useAppStore()
   const [notificationCount] = useState(3)
+  const router = useRouter()
   const t = (key: string) => getTranslation(language, key)
-  const user = getMockUserByRole(currentRole)
+
+  const user = authUser ?? {
+    name: 'Guest User',
+    email: 'guest@greenlogistique.com',
+    role: 'client' as const,
+  }
+
+  const roleLabel =
+    user.role === 'shipper'
+      ? t('shipper')
+      : user.role === 'carrier'
+      ? t('carrier')
+      : user.role === 'client'
+      ? t('client')
+      : t('admin')
+
+  const handleLogout = () => {
+    logout()
+    router.push('/')
+  }
+
+  const handleProfile = () => {
+    if (!authUser) {
+      router.push('/')
+      return
+    }
+
+    switch (authUser.role) {
+      case 'carrier':
+        router.push('/dashboard/carrier/profile')
+        break
+      case 'shipper':
+        router.push('/dashboard/shipper')
+        break
+      case 'client':
+        router.push('/dashboard/client/track')
+        break
+      case 'admin':
+        router.push('/dashboard/admin')
+        break
+      default:
+        router.push('/dashboard/client/track')
+    }
+  }
+
+  const handleSettings = () => {
+    router.push('/dashboard/settings')
+  }
 
   return (
     <header className="bg-card border-b border-border sticky top-0 z-40">
@@ -48,14 +96,7 @@ export function Topbar() {
             <Menu className="w-5 h-5" />
           </button>
           <h2 className="text-sm font-semibold text-foreground capitalize">
-            {currentRole === 'expéditeur'
-              ? t('shipper')
-              : currentRole === 'transporteur'
-                ? t('carrier')
-                : currentRole === 'client'
-                  ? t('client')
-                  : t('admin')}{' '}
-            Dashboard
+            {roleLabel} Dashboard
           </h2>
         </div>
 
@@ -131,55 +172,6 @@ export function Topbar() {
             </DropdownMenuContent>
           </DropdownMenu>
 
-          {/* Role Switcher (Demo) */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className={cn(
-                  'px-3 py-2 rounded-lg transition-colors text-sm font-medium',
-                  'bg-primary/10 text-primary hover:bg-primary/20',
-                )}
-              >
-                {currentRole === 'expéditeur'
-                  ? '📦'
-                  : currentRole === 'transporteur'
-                    ? '🚚'
-                    : currentRole === 'client'
-                      ? '👤'
-                      : '👨‍💼'}{' '}
-                {currentRole}
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" dir={language === 'ar' ? 'rtl' : 'ltr'}>
-              <DropdownMenuLabel>Switch Role (Demo)</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => setCurrentRole('admin')}
-                className={currentRole === 'admin' ? 'bg-sidebar-accent/10' : ''}
-              >
-                👨‍💼 Admin
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setCurrentRole('expéditeur')}
-                className={currentRole === 'expéditeur' ? 'bg-sidebar-accent/10' : ''}
-              >
-                📦 Expéditeur
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setCurrentRole('transporteur')}
-                className={currentRole === 'transporteur' ? 'bg-sidebar-accent/10' : ''}
-              >
-                🚚 Transporteur
-              </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => setCurrentRole('client')}
-                className={currentRole === 'client' ? 'bg-sidebar-accent/10' : ''}
-              >
-                👤 Client Final
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
           {/* User Menu */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -200,16 +192,16 @@ export function Topbar() {
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleProfile}>
                 <User className="w-4 h-4 mr-2" />
                 {t('profile')}
               </DropdownMenuItem>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={handleSettings}>
                 <span className="w-4 h-4 mr-2">⚙️</span>
                 {t('settings')}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive focus:text-destructive focus:bg-destructive/10">
+              <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive focus:bg-destructive/10">
                 <LogOut className="w-4 h-4 mr-2" />
                 {t('logout')}
               </DropdownMenuItem>

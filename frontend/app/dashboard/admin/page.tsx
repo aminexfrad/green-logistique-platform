@@ -1,22 +1,16 @@
-'use client'
+﻿'use client'
 
+import { useEffect, useState } from 'react'
 import { DashboardLayout } from '@/components/layout/dashboard-layout'
 import { KPICard } from '@/components/shared/kpi-card'
 import { DataTable } from '@/components/shared/data-table'
 import { Button } from '@/components/ui/button'
 import { useAppStore } from '@/lib/store'
 import { getTranslation } from '@/lib/translations'
-import { mockUsers, mockShipments } from '@/lib/mock-data'
-import {
-  BarChart3,
-  Users,
-  PackageOpen,
-  Leaf,
-  Eye,
-  Trash2,
-  Shield,
-} from 'lucide-react'
+import { fetchShipments, fetchUsers } from '@/lib/api'
+import { BarChart3, Users, PackageOpen, Leaf, Eye, Trash2, Shield } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, BarChart, Bar } from 'recharts'
+import type { Shipment, User } from '@/lib/mock-data'
 
 const co2Data = [
   { month: 'Jan', emissions: 450, compensated: 100 },
@@ -40,6 +34,29 @@ const usageData = [
 export default function AdminDashboard() {
   const { language } = useAppStore()
   const t = (key: string) => getTranslation(language, key)
+  const [users, setUsers] = useState<User[]>([])
+  const [shipments, setShipments] = useState<Shipment[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+
+    Promise.all([fetchUsers(), fetchShipments()])
+      .then(([usersData, shipmentsData]) => {
+        setUsers(usersData)
+        setShipments(shipmentsData)
+      })
+      .catch(() => {
+        setUsers([])
+        setShipments([])
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const totalCO2 = shipments.reduce((sum, shipment) => {
+    const co2 = Number(shipment.co2Kg ?? shipment.co2_kg ?? 0)
+    return sum + (Number.isFinite(co2) ? co2 : 0)
+  }, 0)
 
   const userColumns = [
     {
@@ -118,9 +135,12 @@ export default function AdminDashboard() {
     {
       key: 'co2Kg',
       label: 'CO2 (kg)',
-      render: (value: number) => (
-        <span className="font-semibold text-foreground">{value.toFixed(1)}</span>
-      ),
+      render: (value: number, row: any) => {
+        const co2 = typeof value === 'number' ? value : Number(row?.co2Kg ?? row?.co2_kg ?? 0)
+        return (
+          <span className="font-semibold text-foreground">{Number.isFinite(co2) ? co2.toFixed(1) : '0.0'}</span>
+        )
+      },
     },
   ]
 
@@ -140,8 +160,8 @@ export default function AdminDashboard() {
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <KPICard
-            title={t('total')} User Management
-            value="248"
+            title={t('total')}
+            value={users.length}
             icon={Users}
             unit="users"
             trend={{ value: 12, direction: 'up' }}
@@ -149,7 +169,7 @@ export default function AdminDashboard() {
           />
           <KPICard
             title="Total Shipments"
-            value="1,243"
+            value={shipments.length}
             icon={PackageOpen}
             unit="shipments"
             trend={{ value: 8, direction: 'up' }}
@@ -157,15 +177,15 @@ export default function AdminDashboard() {
           />
           <KPICard
             title="Total CO2 Emissions"
-            value="3,850"
+            value={totalCO2.toFixed(0)}
             icon={Leaf}
-            unit="tons"
+            unit="kg"
             trend={{ value: 5, direction: 'down' }}
             color="accent"
           />
           <KPICard
             title="Carbon Credits Sold"
-            value="1,200"
+            value={Math.round(shipments.length * 0.6)}
             icon={BarChart3}
             unit="tons"
             trend={{ value: 15, direction: 'up' }}
@@ -260,7 +280,7 @@ export default function AdminDashboard() {
           </div>
           <DataTable
             columns={userColumns}
-            data={mockUsers}
+            data={users}
             searchPlaceholder="Search users..."
             actions={(row) => (
               <div className="flex items-center gap-2">
@@ -282,7 +302,7 @@ export default function AdminDashboard() {
           </h3>
           <DataTable
             columns={shipmentColumns}
-            data={mockShipments}
+            data={shipments}
             searchPlaceholder="Search shipments..."
             actions={(row) => (
               <button className="p-2 hover:bg-sidebar-accent/10 rounded-lg text-muted-foreground hover:text-foreground transition-colors">
