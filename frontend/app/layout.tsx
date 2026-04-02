@@ -12,7 +12,7 @@ const _geistMono = Geist_Mono({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: 'Green Logistique - Ecolog Solutions',
   description: 'Sustainable logistics platform for optimal shipment management and carbon reduction',
-  generator: 'v0.app',
+  generator: 'Next.js',
   icons: {
     icon: [
       {
